@@ -1,11 +1,183 @@
-<html>
+<html xmlns:value="http://www.w3.org/1999/xhtml">
 <head>
     <title>RPG</title>
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
     <link href="/css/my.css" rel="stylesheet">
 </head>
-<body>
+<body onload="list(0)">
 <h1>RPG admin panel</h1>
+<label for="count_1">Count per page:</label>
+<select id="count_1" onchange="list(0)">
+    <option value:3>3</option>
+    <option value:4>4</option>
+    <option value:5>5</option>
+    <option value:6>6</option>
+    <option value:7>7</option>
+    <option value:8>8</option>
+    <option value:9>9</option>
+    <option value:10>10</option>
+    <option value:11>11</option>
+    <option value:12>12</option>
+    <option value:13>13</option>
+    <option value:14>14</option>
+    <option value:15>15</option>
+    <option value:16>16</option>
+    <option value:17>17</option>
+    <option value:18>18</option>
+    <option value:19>19</option>
+    <option value:20>20</option>
+</select>
+<table id="Table123">
+    <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Race</th>
+        <th>Profession</th>
+        <th>Level</th>
+        <th>Birthday</th>
+        <th>Banned</th>
+        <th>Edit</th>
+        <th>Delete</th>
 
+    </tr>
+</table>
+
+<div id="paging_buttons">Pages: </div>
+<script>
+    function list(page_number) {
+        $("tr:has(td)").remove();
+
+        let url = "/rest/players?";
+
+        let countPerPage = $("#count_1").val();
+        if (countPerPage == null){
+            countPerPage = 3;
+        }
+
+        url = url.concat("pageSize=").concat(countPerPage);
+
+        if(page_number == null){
+            page_number = 0;
+        }
+        url = url.concat("&pageNumber=").concat(page_number);
+
+        $.get(url, function (response) {
+            $.each(response, function (i, item) {
+                $('<tr>').html("<td>"
+                    + item.id + "</td><td>"
+                    + item.name + "</td><td>"
+                    + item.title + "</td><td>"
+                    + item.race + "</td><td>"
+                    + item.profession + "</td><td>"
+                    + item.level + "</td><td>"
+                    + new Date(item.birthday).toLocaleDateString() + "</td><td>"
+                    + item.banned + "</td><td>"
+                    + "<button id='button_edit_" + item.id + "' onclick='editAcc(" + item.id +")'>"
+                    + "<img src='/img/edit.png'>"
+                    + "</button>" + "</td><td>"
+                    + "<button id='button_delete_" + item.id + "' onclick='deleteAcc(" + item.id + ")'>"
+                    + "<img src='/img/delete.png'>"
+                    + "</button>" + "</td>"
+                )
+                    .appendTo("#Table123");
+            });
+        });
+
+        let totalCount = usersTotalCount();
+
+        let pageCount = Math.ceil(totalCount / countPerPage);
+
+        $("button.pgn-bnt-styled").remove();
+
+        for (let i = 0; i < pageCount; i++){
+            let button_tag = "<button>" + (i + 1) + "</button>";
+            let btn = $(button_tag)
+                .attr("id", "paging_button_" + i)
+                .attr("onclick", "list(" + i + ")")
+                .addClass("pgn-bnt-styled");
+            $("#paging_buttons").append(btn);
+        }
+
+        let identifier = "#paging_button_" + page_number;
+        $(identifier).css("color", "red");
+    }
+
+    function usersTotalCount(){
+        let url = "/rest/players/count";
+        let res = 0;
+        $.ajax({
+            url: url,
+            async: false,
+            success: function (result) {
+                res = parseInt(result);
+            }}
+        )
+        return res;
+    }
+
+    function deleteAcc(id){
+        let url = "/rest/players/" + id;
+        $.ajax({
+            url: url,
+            type: 'DELETE',
+            success: function (){
+                list(getCurrentPage())
+            }
+        });
+    }
+
+    function editAcc(id){
+        let identifier_edit = "#button_edit_" + id;
+        let identifier_delete = "#button_delete_" + id;
+
+        $(identifier_delete).remove();
+
+        let save_image_tag = "<img src='/img/save.png'>";
+        $(identifier_edit).html(save_image_tag);
+
+        let current_tr_element = $(identifier_edit).parent().parent();
+        let children = current_tr_element.children();
+
+        let td_name = children[1];
+        td_name.innerHTML = "<input id='input_name_" + id + "' type='text' value ='" + td_name.innerHTML + " '>";
+
+        let td_title = children[2];
+        td_title.innerHTML = "<input id='input_title_" + id + "' type='text' value ='" + td_title.innerHTML + " '>";
+
+        let td_race = children[3];
+        let race_id = "select_race_" + id;
+        let race_current_value = td_race.innerHTML;
+        td_race.innerHTML = getDropDownRaceHTML(id);
+        $(race_id).val(race_current_value).change();
+
+
+    }
+
+    function getDropDownRaceHTML(){
+        let race_id = "select_race_" + id;
+        return "<label for='race'></label>"
+            +"<select id=" + race_id + "name='race'>"
+            + "<option value='HUMAN'>HUMAN</option>"
+            + "<option value='DWARF'>DWARF</option>"
+            + "<option value='ELF'>ELF</option>"
+            + "<option value='GIANT'>GIANT</option>"
+            + "<option value='ORC'>ORC</option>"
+            + "<option value='TROLL'>TROLL</option>"
+            + "<option value='HOBBIT'>HOBBIT</option>"
+        +"</select>";
+    }
+
+
+    function getCurrentPage(){
+        let currentPage = 1;
+        $('button:parent(div)').each(function (){
+            if($(this).css('color') === 'rgb(255, 0, 0)'){
+                currentPage = $(this).text();
+            }
+        });
+        return parseInt(currentPage) - 1;
+    }
+</script>
 </body>
 </html>
